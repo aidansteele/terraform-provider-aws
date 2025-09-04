@@ -739,6 +739,70 @@ If both this argument and the corresponding environment variable are set, values
 This configuration prevents Terraform from returning any tag key matching the prefixes in any `tags` attributes and displaying any configuration difference for those tag values.
 If any resource configuration still has a tag matching one of the prefixes configured in the `tags` argument, it will display a perpetual difference until the tag is removed from the argument or [`ignore_changes`](https://www.terraform.io/docs/configuration/meta-arguments/lifecycle.html#ignore_changes) is also used.
 
+## Automatic Terraform Address Tagging
+
+The AWS provider automatically adds a `terraform:address` tag to all taggable resources managed by this provider. The tag value contains the Terraform resource type name (e.g., `aws_s3_bucket`, `aws_instance`, `aws_rds_cluster`). This tag helps identify which Terraform resource type created the AWS resource, making it easier to correlate Terraform configurations with AWS resources in cost analysis, compliance auditing, and operational monitoring.
+
+### Example: Automatic terraform:address tag
+
+```terraform
+resource "aws_s3_bucket" "example" {
+  bucket = "my-terraform-bucket"
+  
+  tags = {
+    Environment = "production"
+    Project     = "web-app"
+  }
+}
+
+# The above resource will automatically receive a terraform:address tag
+# with the value "aws_s3_bucket" in addition to the specified tags
+```
+
+The `terraform:address` tag appears in the `tags_all` attribute:
+
+```console
+$ terraform apply
+...
+$ terraform show aws_s3_bucket.example
+
+# aws_s3_bucket.example:
+resource "aws_s3_bucket" "example" {
+    bucket = "my-terraform-bucket"
+    ...
+    tags = {
+        "Environment" = "production"
+        "Project"     = "web-app"
+    }
+    tags_all = {
+        "Environment"        = "production"
+        "Project"           = "web-app"
+        "terraform:address" = "aws_s3_bucket"
+    }
+}
+```
+
+### Behavior Notes
+
+* The `terraform:address` tag is automatically added during resource creation and updates
+* The tag value is enforced by the provider and cannot be overridden by user configuration
+* If a user attempts to set the `terraform:address` tag manually, the provider value takes precedence
+* The tag is only added to resources that support tagging; non-taggable resources are unaffected
+* Existing resources will receive the tag on their next update operation
+* The tag works with both `default_tags` and user-specified `tags`, preserving all existing tag functionality
+
+### Use Cases
+
+The automatic `terraform:address` tag enables several operational and governance use cases:
+
+* **Cost Attribution**: Filter AWS Cost Explorer or billing reports by Terraform resource types
+* **Compliance Auditing**: Identify which resources were created through Infrastructure as Code vs. manual processes
+* **Operational Monitoring**: Create CloudWatch dashboards or alerts grouped by Terraform resource types
+* **Resource Discovery**: Quickly identify the Terraform resource type responsible for AWS resources
+* **Drift Detection**: Compare planned Terraform state with actual AWS resource tags
+
+This feature complements existing tagging capabilities and works seamlessly with `default_tags`, `ignore_tags`, and resource-level tag configurations.
+
 ## Getting the Account ID
 
 If you use either `allowed_account_ids` or `forbidden_account_ids`,

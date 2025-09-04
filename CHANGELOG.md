@@ -8,6 +8,7 @@ NOTES:
 
 ENHANCEMENTS:
 
+* provider: Automatically add `terraform:address` tag to all taggable AWS resources with the Terraform resource type name (e.g., `aws_s3_bucket`, `aws_instance`). This tag helps identify which Terraform resource type created each AWS resource for cost analysis, compliance auditing, and operational monitoring. The tag appears in `tags_all` and cannot be overridden by user configuration. Non-taggable resources are unaffected.
 * data-source/aws_efs_mount_target: Add `ip_address_type` and `ipv6_address` attributes ([#44079](https://github.com/hashicorp/terraform-provider-aws/issues/44079))
 * data-source/aws_instance: Add `placement_group_id` attribute ([#38527](https://github.com/hashicorp/terraform-provider-aws/issues/38527))
 * data-source/aws_lambda_function: Add `source_kms_key_arn` attribute ([#44080](https://github.com/hashicorp/terraform-provider-aws/issues/44080))
