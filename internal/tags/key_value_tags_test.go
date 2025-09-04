@@ -2854,27 +2854,30 @@ func TestKeyValueTagsWithTerraformAddressTag(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
+	
+	// NOTE: Current implementation uses resource type name due to plugin framework limitations.
+	// Future enhancement should test full resource addresses like "module.postgres.aws_iam_role_policy_attachment.rds_enhanced_monitoring"
 	testCases := []struct {
-		name     string
-		tags     KeyValueTags
-		typeName string
-		want     KeyValueTags
+		name                   string
+		tags                   KeyValueTags
+		resourceTypeAddress    string // Currently just resource type, future: full address
+		want                   KeyValueTags
 	}{
 		{
-			name:     "empty tags with type name",
-			tags:     New(ctx, map[string]string{}),
-			typeName: "aws_s3_bucket",
+			name:                "empty tags with resource type",
+			tags:                New(ctx, map[string]string{}),
+			resourceTypeAddress: "aws_s3_bucket", // Future: should be full address like "module.storage.aws_s3_bucket.main"
 			want: New(ctx, map[string]string{
 				TerraformAddressTagKey: "aws_s3_bucket",
 			}),
 		},
 		{
-			name: "existing tags with type name",
+			name: "existing tags with resource type",
 			tags: New(ctx, map[string]string{
 				"key1": "value1",
 				"key2": "value2",
 			}),
-			typeName: "aws_ec2_instance",
+			resourceTypeAddress: "aws_ec2_instance", // Future: should be full address
 			want: New(ctx, map[string]string{
 				"key1":                 "value1",
 				"key2":                 "value2",
@@ -2887,17 +2890,17 @@ func TestKeyValueTagsWithTerraformAddressTag(t *testing.T) {
 				"key1":                 "value1",
 				TerraformAddressTagKey: "old_value",
 			}),
-			typeName: "aws_rds_instance",
+			resourceTypeAddress: "aws_rds_instance",
 			want: New(ctx, map[string]string{
 				"key1":                 "value1",
 				TerraformAddressTagKey: "aws_rds_instance",
 			}),
 		},
 		{
-			name:     "empty type name",
-			tags:     New(ctx, map[string]string{"key1": "value1"}),
-			typeName: "",
-			want:     New(ctx, map[string]string{"key1": "value1"}),
+			name:                "empty resource address",
+			tags:                New(ctx, map[string]string{"key1": "value1"}),
+			resourceTypeAddress: "",
+			want:                New(ctx, map[string]string{"key1": "value1"}),
 		},
 	}
 
@@ -2905,7 +2908,7 @@ func TestKeyValueTagsWithTerraformAddressTag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.tags.WithTerraformAddressTag(ctx, testCase.typeName)
+			got := testCase.tags.WithTerraformAddressTag(ctx, testCase.resourceTypeAddress)
 
 			testKeyValueTagsVerifyMap(t, got.Map(), testCase.want.Map())
 		})

@@ -23,6 +23,8 @@ func TestAccS3Bucket_terraformAddressTag(t *testing.T) {
 	resourceName := "aws_s3_bucket.test"
 	bucketName := sdkacctest.RandomWithPrefix("tf-test-bucket")
 
+	// NOTE: Currently testing resource type name ("aws_s3_bucket") due to plugin framework limitations.
+	// Future enhancement should test full resource address like "module.storage.aws_s3_bucket.test"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(ctx, t) },
 		ErrorCheck:               acctest.ErrorCheck(t, names.S3ServiceID),
@@ -39,6 +41,7 @@ func TestAccS3Bucket_terraformAddressTag(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, acctest.CtTagsAllPercent, "3"),
 					resource.TestCheckResourceAttr(resourceName, "tags_all.Environment", "test"),
 					resource.TestCheckResourceAttr(resourceName, "tags_all.Project", "terraform-address-tag"),
+					// Currently verifies resource type name; future: should verify full address
 					resource.TestCheckResourceAttr(resourceName, "tags_all.terraform:address", "aws_s3_bucket"),
 					testAccCheckBucketHasTerraformAddressTag(ctx, resourceName, "aws_s3_bucket"),
 				),

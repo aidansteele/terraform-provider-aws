@@ -328,16 +328,27 @@ func (tags KeyValueTags) Merge(mergeTags KeyValueTags) KeyValueTags {
 	return result
 }
 
-// WithTerraformAddressTag adds the terraform:address tag with the specified type name.
+// WithTerraformAddressTag adds the terraform:address tag with the available resource address information.
 // This tag is enforced and will override any user-provided terraform:address tag.
-func (tags KeyValueTags) WithTerraformAddressTag(ctx context.Context, typeName string) KeyValueTags {
+// 
+// Current Implementation: Uses the resource type name (e.g., "aws_s3_bucket") as the Terraform 
+// plugin framework doesn't provide direct access to the full resource address including module 
+// path and resource name through standard APIs.
+//
+// Desired Format: "module.postgres.aws_iam_role_policy_attachment.rds_enhanced_monitoring"
+// Current Format: "aws_iam_role_policy_attachment" 
+//
+// TODO: Enhance to include full resource address when implementation approach is determined.
+func (tags KeyValueTags) WithTerraformAddressTag(ctx context.Context, resourceTypeAddress string) KeyValueTags {
 	result := make(KeyValueTags)
 
 	maps.Copy(result, tags)
 
-	if typeName != "" {
+	if resourceTypeAddress != "" {
+		// Currently this contains only the resource type name due to plugin framework limitations
+		// Future enhancement should include module path and resource instance name
 		result[TerraformAddressTagKey] = &TagData{
-			Value: &typeName,
+			Value: &resourceTypeAddress,
 		}
 	}
 

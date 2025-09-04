@@ -741,7 +741,13 @@ If any resource configuration still has a tag matching one of the prefixes confi
 
 ## Automatic Terraform Address Tagging
 
-The AWS provider automatically adds a `terraform:address` tag to all taggable resources managed by this provider. The tag value contains the Terraform resource type name (e.g., `aws_s3_bucket`, `aws_instance`, `aws_rds_cluster`). This tag helps identify which Terraform resource type created the AWS resource, making it easier to correlate Terraform configurations with AWS resources in cost analysis, compliance auditing, and operational monitoring.
+The AWS provider automatically adds a `terraform:address` tag to all taggable resources managed by this provider. 
+
+**Current Implementation**: The tag value contains the Terraform resource type name (e.g., `aws_s3_bucket`, `aws_instance`, `aws_rds_cluster`) due to plugin framework limitations that prevent access to the full resource address.
+
+**Planned Enhancement**: Future versions will include the full resource address including module path and resource name (e.g., `module.postgres.aws_iam_role_policy_attachment.rds_enhanced_monitoring`) to provide complete resource traceability.
+
+This tag helps identify which Terraform resource type created the AWS resource, making it easier to correlate Terraform configurations with AWS resources in cost analysis, compliance auditing, and operational monitoring.
 
 ### Example: Automatic terraform:address tag
 
@@ -756,7 +762,8 @@ resource "aws_s3_bucket" "example" {
 }
 
 # The above resource will automatically receive a terraform:address tag
-# with the value "aws_s3_bucket" in addition to the specified tags
+# Current: with the value "aws_s3_bucket" (resource type only)
+# Future: with full address like "module.storage.aws_s3_bucket.example"
 ```
 
 The `terraform:address` tag appears in the `tags_all` attribute:
@@ -785,6 +792,8 @@ resource "aws_s3_bucket" "example" {
 ### Behavior Notes
 
 * The `terraform:address` tag is automatically added during resource creation and updates
+* **Current**: Tag value contains only the resource type name due to plugin framework limitations
+* **Future**: Tag value will include the full resource address with module path and resource name
 * The tag value is enforced by the provider and cannot be overridden by user configuration
 * If a user attempts to set the `terraform:address` tag manually, the provider value takes precedence
 * The tag is only added to resources that support tagging; non-taggable resources are unaffected
