@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-provider-aws/internal/conns"
 	fwflex "github.com/hashicorp/terraform-provider-aws/internal/framework/flex"
 	"github.com/hashicorp/terraform-provider-aws/internal/provider/interceptors"
 	tftags "github.com/hashicorp/terraform-provider-aws/internal/tags"
@@ -103,6 +104,12 @@ func (r tagsResourceInterceptor) create(ctx context.Context, opts interceptorOpt
 		tags := c.DefaultTagsConfig(ctx).MergeTags(tftags.New(ctx, planTags))
 		// Remove system tags.
 		tags = tags.IgnoreSystem(sp.ServicePackageName())
+		
+		// Add terraform:address tag with the resource type name
+		if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+			tags = tags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+		}
+		
 		tagsInContext.TagsIn = option.Some(tags)
 	case After:
 		// Set values for unknowns.
@@ -196,6 +203,12 @@ func (r tagsResourceInterceptor) update(ctx context.Context, opts interceptorOpt
 		tags := c.DefaultTagsConfig(ctx).MergeTags(tftags.New(ctx, planTags))
 		// Remove system tags.
 		tags = tags.IgnoreSystem(sp.ServicePackageName())
+		
+		// Add terraform:address tag with the resource type name
+		if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+			tags = tags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+		}
+		
 		tagsInContext.TagsIn = option.Some(tags)
 
 		var oldTagsAll, newTagsAll tftags.Map
@@ -242,6 +255,12 @@ func (r tagsResourceInterceptor) modifyPlan(ctx context.Context, opts intercepto
 
 		if planTags.IsWhollyKnown() {
 			allTags := c.DefaultTagsConfig(ctx).MergeTags(tftags.New(ctx, planTags)).IgnoreConfig(c.IgnoreTagsConfig(ctx))
+			
+			// Add terraform:address tag with the resource type name
+			if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+				allTags = allTags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+			}
+			
 			opts.response.Diagnostics.Append(response.Plan.SetAttribute(ctx, path.Root(names.AttrTagsAll), fwflex.FlattenFrameworkStringValueMapLegacy(ctx, allTags.Map()))...)
 		} else {
 			opts.response.Diagnostics.Append(response.Plan.SetAttribute(ctx, path.Root(names.AttrTagsAll), tftags.Unknown)...)

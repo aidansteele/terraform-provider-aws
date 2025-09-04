@@ -26,6 +26,7 @@ const (
 	ElasticbeanstalkTagKeyPrefix                = `elasticbeanstalk:`
 	NameTagKey                                  = `Name`
 	ServerlessApplicationRepositoryTagKeyPrefix = `serverlessrepo:`
+	TerraformAddressTagKey                      = `terraform:address`
 
 	// Environment variables with this prefix will be treated as a `default_tags` key value pair
 	//
@@ -323,6 +324,22 @@ func (tags KeyValueTags) Merge(mergeTags KeyValueTags) KeyValueTags {
 	maps.Copy(result, tags)
 
 	maps.Copy(result, mergeTags)
+
+	return result
+}
+
+// WithTerraformAddressTag adds the terraform:address tag with the specified type name.
+// This tag is enforced and will override any user-provided terraform:address tag.
+func (tags KeyValueTags) WithTerraformAddressTag(ctx context.Context, typeName string) KeyValueTags {
+	result := make(KeyValueTags)
+
+	maps.Copy(result, tags)
+
+	if typeName != "" {
+		result[TerraformAddressTagKey] = &TagData{
+			Value: &typeName,
+		}
+	}
 
 	return result
 }

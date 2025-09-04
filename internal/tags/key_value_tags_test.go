@@ -2849,3 +2849,65 @@ func testBoolPtr(b bool) *bool {
 func testStringPtr(str string) *string {
 	return &str
 }
+
+func TestKeyValueTagsWithTerraformAddressTag(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	testCases := []struct {
+		name     string
+		tags     KeyValueTags
+		typeName string
+		want     KeyValueTags
+	}{
+		{
+			name:     "empty tags with type name",
+			tags:     New(ctx, map[string]string{}),
+			typeName: "aws_s3_bucket",
+			want: New(ctx, map[string]string{
+				TerraformAddressTagKey: "aws_s3_bucket",
+			}),
+		},
+		{
+			name: "existing tags with type name",
+			tags: New(ctx, map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			}),
+			typeName: "aws_ec2_instance",
+			want: New(ctx, map[string]string{
+				"key1":                 "value1",
+				"key2":                 "value2",
+				TerraformAddressTagKey: "aws_ec2_instance",
+			}),
+		},
+		{
+			name: "override existing terraform:address tag",
+			tags: New(ctx, map[string]string{
+				"key1":                 "value1",
+				TerraformAddressTagKey: "old_value",
+			}),
+			typeName: "aws_rds_instance",
+			want: New(ctx, map[string]string{
+				"key1":                 "value1",
+				TerraformAddressTagKey: "aws_rds_instance",
+			}),
+		},
+		{
+			name:     "empty type name",
+			tags:     New(ctx, map[string]string{"key1": "value1"}),
+			typeName: "",
+			want:     New(ctx, map[string]string{"key1": "value1"}),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := testCase.tags.WithTerraformAddressTag(ctx, testCase.typeName)
+
+			testKeyValueTagsVerifyMap(t, got.Map(), testCase.want.Map())
+		})
+	}
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-provider-aws/internal/conns"
 	"github.com/hashicorp/terraform-provider-aws/internal/errs/sdkdiag"
 	"github.com/hashicorp/terraform-provider-aws/internal/provider/interceptors"
 	tftags "github.com/hashicorp/terraform-provider-aws/internal/tags"
@@ -50,6 +51,11 @@ func (r tagsResourceCRUDInterceptor) run(ctx context.Context, opts crudIntercept
 			tags := c.DefaultTagsConfig(ctx).MergeTags(tftags.New(ctx, d.Get(names.AttrTags).(map[string]any)))
 			// Remove system tags.
 			tags = tags.IgnoreSystem(sp.ServicePackageName())
+
+			// Add terraform:address tag with the resource type name
+			if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+				tags = tags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+			}
 
 			tagsInContext.TagsIn = option.Some(tags)
 
@@ -144,6 +150,11 @@ func (r tagsResourceCRUDInterceptor) run(ctx context.Context, opts crudIntercept
 				newTags := c.DefaultTagsConfig(ctx).MergeTags(tftags.New(ctx, configTags))
 				// Remove system tags.
 				newTags = newTags.IgnoreSystem(sp.ServicePackageName())
+
+				// Add terraform:address tag with the resource type name
+				if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+					newTags = newTags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+				}
 
 				if err := r.UpdateTags(ctx, sp, c, identifier, oldTags, newTags); err != nil {
 					return sdkdiag.AppendErrorf(diags, "updating tags for %s %s (%s): %s", serviceName, resourceName, identifier, err)
@@ -254,6 +265,11 @@ func setTagsAll() customizeDiffInterceptor {
 
 				newTags := tftags.New(ctx, d.Get(names.AttrTags).(map[string]any))
 				allTags := c.DefaultTagsConfig(ctx).MergeTags(newTags).IgnoreConfig(c.IgnoreTagsConfig(ctx))
+				
+				// Add terraform:address tag with the resource type name
+				if resourceContext, ok := conns.FromContext(ctx); ok && resourceContext.TypeName() != "" {
+					allTags = allTags.WithTerraformAddressTag(ctx, resourceContext.TypeName())
+				}
 				if d.HasChange(names.AttrTags) {
 					if newTags.HasZeroValue() {
 						if err := d.SetNewComputed(names.AttrTagsAll); err != nil {

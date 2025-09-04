@@ -90,7 +90,7 @@ func (w *wrappedDataSource) context(ctx context.Context, getAttribute getAttribu
 		overrideRegion = target.ValueString()
 	}
 
-	ctx = conns.NewResourceContext(ctx, w.servicePackageName, w.spec.Name, overrideRegion)
+	ctx = conns.NewResourceContextWithTypeName(ctx, w.servicePackageName, w.spec.Name, w.spec.TypeName, overrideRegion)
 	if c != nil {
 		ctx = tftags.NewContext(ctx, c.DefaultTagsConfig(ctx), c.IgnoreTagsConfig(ctx))
 		ctx = c.RegisterLogger(ctx)
@@ -240,7 +240,7 @@ func (w *wrappedEphemeralResource) context(ctx context.Context, getAttribute get
 		overrideRegion = target.ValueString()
 	}
 
-	ctx = conns.NewResourceContext(ctx, w.servicePackageName, w.spec.Name, overrideRegion)
+	ctx = conns.NewResourceContextWithTypeName(ctx, w.servicePackageName, w.spec.Name, w.spec.TypeName, overrideRegion)
 	if c != nil {
 		ctx = c.RegisterLogger(ctx)
 		ctx = fwflex.RegisterLogger(ctx)
@@ -433,7 +433,7 @@ func (w *wrappedResource) context(ctx context.Context, getAttribute getAttribute
 		overrideRegion = target.ValueString()
 	}
 
-	ctx = conns.NewResourceContext(ctx, w.servicePackageName, w.spec.Name, overrideRegion)
+	ctx = conns.NewResourceContextWithTypeName(ctx, w.servicePackageName, w.spec.Name, w.spec.TypeName, overrideRegion)
 	if c != nil {
 		ctx = tftags.NewContext(ctx, c.DefaultTagsConfig(ctx), c.IgnoreTagsConfig(ctx))
 		ctx = c.RegisterLogger(ctx)
