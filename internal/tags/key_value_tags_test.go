@@ -2849,3 +2849,68 @@ func testBoolPtr(b bool) *bool {
 func testStringPtr(str string) *string {
 	return &str
 }
+
+func TestKeyValueTagsWithTerraformAddressTag(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	
+	// NOTE: Current implementation uses resource type name due to plugin framework limitations.
+	// Future enhancement should test full resource addresses like "module.postgres.aws_iam_role_policy_attachment.rds_enhanced_monitoring"
+	testCases := []struct {
+		name                   string
+		tags                   KeyValueTags
+		resourceTypeAddress    string // Currently just resource type, future: full address
+		want                   KeyValueTags
+	}{
+		{
+			name:                "empty tags with resource type",
+			tags:                New(ctx, map[string]string{}),
+			resourceTypeAddress: "aws_s3_bucket", // Future: should be full address like "module.storage.aws_s3_bucket.main"
+			want: New(ctx, map[string]string{
+				TerraformAddressTagKey: "aws_s3_bucket",
+			}),
+		},
+		{
+			name: "existing tags with resource type",
+			tags: New(ctx, map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			}),
+			resourceTypeAddress: "aws_ec2_instance", // Future: should be full address
+			want: New(ctx, map[string]string{
+				"key1":                 "value1",
+				"key2":                 "value2",
+				TerraformAddressTagKey: "aws_ec2_instance",
+			}),
+		},
+		{
+			name: "override existing terraform:address tag",
+			tags: New(ctx, map[string]string{
+				"key1":                 "value1",
+				TerraformAddressTagKey: "old_value",
+			}),
+			resourceTypeAddress: "aws_rds_instance",
+			want: New(ctx, map[string]string{
+				"key1":                 "value1",
+				TerraformAddressTagKey: "aws_rds_instance",
+			}),
+		},
+		{
+			name:                "empty resource address",
+			tags:                New(ctx, map[string]string{"key1": "value1"}),
+			resourceTypeAddress: "",
+			want:                New(ctx, map[string]string{"key1": "value1"}),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := testCase.tags.WithTerraformAddressTag(ctx, testCase.resourceTypeAddress)
+
+			testKeyValueTagsVerifyMap(t, got.Map(), testCase.want.Map())
+		})
+	}
+}

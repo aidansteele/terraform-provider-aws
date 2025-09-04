@@ -40,6 +40,7 @@ type InContext struct {
 	overrideRegion     string // Any currently in effect per-resource Region override.
 	resourceName       string // Friendly resource name, e.g. "Subnet"
 	servicePackageName string // Canonical name defined as a constant in names package
+	typeName           string // Terraform resource type name, e.g. "aws_s3_bucket"
 	vcrEnabled         bool   // Whether VCR testing is enabled
 }
 
@@ -58,16 +59,26 @@ func (c *InContext) ServicePackageName() string {
 	return c.servicePackageName
 }
 
+// TypeName returns the Terraform resource type name, e.g. "aws_s3_bucket".
+func (c *InContext) TypeName() string {
+	return c.typeName
+}
+
 // VCREnabled indicates whether VCR testing is enabled.
 func (c *InContext) VCREnabled() bool {
 	return c.vcrEnabled
 }
 
 func NewResourceContext(ctx context.Context, servicePackageName, resourceName, overrideRegion string) context.Context {
+	return NewResourceContextWithTypeName(ctx, servicePackageName, resourceName, "", overrideRegion)
+}
+
+func NewResourceContextWithTypeName(ctx context.Context, servicePackageName, resourceName, typeName, overrideRegion string) context.Context {
 	v := InContext{
 		overrideRegion:     overrideRegion,
 		resourceName:       resourceName,
 		servicePackageName: servicePackageName,
+		typeName:           typeName,
 		vcrEnabled:         vcr.IsEnabled(),
 	}
 
